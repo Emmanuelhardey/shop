@@ -12,10 +12,34 @@ export default function ClothingStoreDemo() {
   const [page, setPage] = useState("home");
   const [message, setMessage] = useState("");
 
-  const addToCart = (product) => {
+
+  // 1. Updated addToCart (Added default quantity = 1)
+  const addToCart = (product, quantity = 1) => {
+    window.dataLayer = window.dataLayer || [];
+
+    window.dataLayer.push({
+      event: 'add_to_cart',
+      ecommerce: {
+        currency: 'NGN', 
+        value: product.price * quantity, 
+        items: [
+          {
+            item_id: product.id,
+            item_name: product.name,
+            price: product.price,
+            quantity: quantity
+          }
+        ]
+      }
+    });
+
     setCart((prev) => [...prev, product]);
     setMessage(`${product.name} added to cart`);
   };
+  // const addToCart = (product) => {
+  //   setCart((prev) => [...prev, product]);
+  //   setMessage(`${product.name} added to cart`);
+  // };
 
   const buyNow = (product) => {
     setCart([product]);
@@ -24,23 +48,51 @@ export default function ClothingStoreDemo() {
 
   const total = cart.reduce((sum, item) => sum + item.price, 0);
 
+  // 2. Updated placeOrder (Added ecommerce wrapper, formatted items, transaction_id)
   const placeOrder = (e) => {
     e.preventDefault();
 
-    // Simulated conversion tracking (Google Ads / GA4 style)
+    // Map the cart items into the exact format GA4 expects
+    const ga4Items = cart.map((item) => ({
+      item_id: item.id,
+      item_name: item.name,
+      price: item.price,
+      quantity: 1
+    }));
+
     window.dataLayer = window.dataLayer || [];
     window.dataLayer.push({
       event: "purchase",
-      value: total,
-      currency: "USD",
-      items: cart
+      ecommerce: {
+        transaction_id: "T_" + Date.now(), // Generates a unique ID for the order
+        value: total,
+        currency: "NGN", // Changed to NGN to match your add_to_cart event
+        items: ga4Items
+      }
     });
 
-    console.log("PURCHASE EVENT FIRED", { total, cart });
+    console.log("PURCHASE EVENT FIRED", { total, items: ga4Items });
 
     setPage("thankyou");
     setCart([]);
   };
+  // const placeOrder = (e) => {
+  //   e.preventDefault();
+
+  //   // Simulated conversion tracking (Google Ads / GA4 style)
+  //   window.dataLayer = window.dataLayer || [];
+  //   window.dataLayer.push({
+  //     event: "purchase",
+  //     value: total,
+  //     currency: "USD",
+  //     items: cart
+  //   });
+
+  //   console.log("PURCHASE EVENT FIRED", { total, cart });
+
+  //   setPage("thankyou");
+  //   setCart([]);
+  // };
 
   if (page === "thankyou") {
     return (
